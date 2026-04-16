@@ -1,0 +1,16 @@
+{{define "cards"}}
+<div class="container">
+  <!-- Action "/search" takes us to /search page -->
+   {{range $index, $card := .Cards}} 
+   
+   <!-- display cards -->
+    <p> are cards greater than 0? </p>
+    <p>{{$index}} - {{$card.Name}}</p>
+   {{else}}
+
+   <p>No cards found</p>
+
+   {{end}}
+   <p>End of our cards template</p>
+</div>
+{{end}}

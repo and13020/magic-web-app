@@ -1,0 +1,16 @@
+{{define "content"}}
+<div class="container">
+  <h1>{{.Card.Name}}</h1>
+  <p>Discover and search for your favorite Magic the Gathering cards with ease.</p>
+  {{if gt (len .Cards) 0}}
+    <p>we have more than 0 cards! congratulations</p>
+    <p>Cards List:</p>
+    {{range .Cards}}
+        <div>{{.Name}}</div>
+    {{end}}
+  {{else}}
+    <p>reached our else stmt... uh oh</p>
+  {{end}}
+  <p></p>
+</div>
+{{end}}

@@ -1,0 +1,6 @@
+db_ops/schemas.go
+coverage
+*.idea
+*.bin
+*.out
+*.db
