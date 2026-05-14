@@ -1,0 +1,51 @@
+{{define "content"}}
+<div class="container">
+
+  <div id="auth-form">
+    <div class="badge">New here?</div>
+    <h1>Create your account</h1>
+    <p class="subtitle">Fill in the details below to get started.</p>
+    <div class="error-message"></div> <!-- add error field response later-->
+
+    <form action="/signup" method="post" autocomplete="off">
+
+      <div class="form-group">
+        <label for="username">Username</label>
+        <div class="input-wrap">
+          <input type="text" id="username" name="username" placeholder="e.g. stellar_fox" required/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <div class="input-wrap">
+          <input type="email" id="email" name="email" placeholder="you@example.com" required/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <input type="password" id="password" name="password" placeholder="Min. 8 characters" required/>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm">Confirm Password</label>
+        <div class="input-wrap">
+          <input type="password" id="confirm" name="password2" placeholder="Repeat your password" required/>
+          </button>
+        </div>
+      </div>
+
+
+      <button type="submit" class="btn-primary">Create Account</button>
+    </form>
+
+    <p class="auth-link">Already have an account? <a href="/login">Login here</a></p>
+  </div>
+</div>
+{{end}}
+
+</html>

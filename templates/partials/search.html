@@ -1,14 +1,327 @@
 {{define "search"}}
-<div class="container">
-  <h1>Type name of card:</h1>
-  <!-- Action "/search" takes us to /search page -->
-    <form action="/search" method="post" autocomplete="off">
-        <div class="form-group">
-            <label for="name">Search:</label><br>
-            <input type="text" id="name" name="name" value="black lotus" <br>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MTG Card Search</title>
+</head>
+<body>
+<main class="main-content">
+    <div class="container">
+
+        <!-- Search View -->
+        <div id="view-search">
+            <div class="filter-bar">
+                <div class="filter-form" id="search-form">
+                    <input
+                        type="text"
+                        id="search-input"
+                        class="search-input"
+                        placeholder='Search cards, e.g. "Lightning Bolt", "t:dragon", "o:flying cmc<=3"'
+                        value=""
+                    />
+                    <select id="page-size" class="page-size-select">
+                        <option value="12">12</option>
+                        <option value="24" selected>24</option>
+                        <option value="48">48</option>
+                    </select>
+                    <button class="search-btn" onclick="doSearch()">Search</button>
+                </div>
+                <span class="filter-sep">|</span>
+                <a href="#" class="popular-link" onclick="loadPopular(); return false;">Popular</a>
+            </div>
+
+            <!-- Color (mana) filter chips -->
+            <div class="filter-bar" style="padding: 10px 15px; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size:8pt; color:#828282; white-space:nowrap;">Mana Color:</span>
+                <div class="color-filters">
+                    <span class="color-chip" data-color="W" onclick="toggleColor(this)" title="White">W</span>
+                    <span class="color-chip" data-color="U" onclick="toggleColor(this)" title="Blue">U</span>
+                    <span class="color-chip" data-color="B" onclick="toggleColor(this)" title="Black">B</span>
+                    <span class="color-chip" data-color="R" onclick="toggleColor(this)" title="Red">R</span>
+                    <span class="color-chip" data-color="G" onclick="toggleColor(this)" title="Green">G</span>
+                    <span class="color-chip" data-color="C" onclick="toggleColor(this)" title="Colorless">C</span>
+                </div>
+                <span class="filter-sep">|</span>
+                <span style="font-size:8pt; color:#828282; white-space:nowrap;">Color Identity:</span>
+                <div class="color-filters">
+                    <span class="color-chip identity-chip" data-identity="W" onclick="toggleIdentity(this)" title="White">W</span>
+                    <span class="color-chip identity-chip" data-identity="U" onclick="toggleIdentity(this)" title="Blue">U</span>
+                    <span class="color-chip identity-chip" data-identity="B" onclick="toggleIdentity(this)" title="Black">B</span>
+                    <span class="color-chip identity-chip" data-identity="R" onclick="toggleIdentity(this)" title="Red">R</span>
+                    <span class="color-chip identity-chip" data-identity="G" onclick="toggleIdentity(this)" title="Green">G</span>
+                    <span class="color-chip identity-chip" data-identity="C" onclick="toggleIdentity(this)" title="Colorless">C</span>
+                </div>
+            </div>
+
+            <!-- Type multi-select chips -->
+            <div class="filter-bar" style="padding: 10px 15px; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                <span style="font-size:8pt; color:#828282; white-space:nowrap;">Type:</span>
+                <div class="color-filters" style="flex-wrap:wrap;">
+                    <span class="type-chip" data-type="creature"     onclick="toggleType(this)">Creature</span>
+                    <span class="type-chip" data-type="instant"      onclick="toggleType(this)">Instant</span>
+                    <span class="type-chip" data-type="sorcery"      onclick="toggleType(this)">Sorcery</span>
+                    <span class="type-chip" data-type="enchantment"  onclick="toggleType(this)">Enchantment</span>
+                    <span class="type-chip" data-type="artifact"     onclick="toggleType(this)">Artifact</span>
+                    <span class="type-chip" data-type="planeswalker" onclick="toggleType(this)">Planeswalker</span>
+                    <span class="type-chip" data-type="land"         onclick="toggleType(this)">Land</span>
+                    <span class="type-chip" data-type="battle"       onclick="toggleType(this)">Battle</span>
+                </div>
+                <span class="filter-sep">|</span>
+                <button class="search-btn" style="font-size:8pt; padding:4px 10px;" onclick="doSearch()">Apply</button>
+                <button class="search-btn" style="font-size:8pt; padding:4px 10px; background:#888;" onclick="clearFilters()">Clear</button>
+            </div>
+
+            <div id="results-info" class="results-info" style="display:none;"></div>
+            <div id="results-area"></div>
+
+            <div class="pagination" id="pagination" style="display:none;">
+                <a href="#" class="more-link" id="load-more-btn" onclick="loadMore(); return false;">Load More Cards</a>
+            </div>
         </div>
-        <button type="submit" class="btn-primary">Search</button>
-    </form>
-    {{template "cards" .}}
+    </div>
+</main>
+
+<!-- Card Detail Modal -->
+<div class="modal-overlay" id="card-modal" onclick="closeModal(event)">
+    <div class="modal-box">
+        <button class="modal-close" onclick="closeModalBtn()">&times;</button>
+        <div id="modal-content"></div>
+    </div>
 </div>
+<script>
+// ── State ──
+let currentQuery = '';
+let nextPageUrl = null;
+let selectedColors = [];
+let selectedIdentities = [];
+let selectedTypes = [];
+let isLoading = false;
+
+// ── Build Scryfall query ──
+function buildQuery() {
+    const text = document.getElementById('search-input').value.trim();
+    let q = text || '';
+    // mana color filter
+    if (selectedColors.length > 0) {
+        q += (q ? ' ' : '') + 'color=' + selectedColors.join('');
+    }
+    // color identity filter
+    if (selectedIdentities.length > 0) {
+        q += (q ? ' ' : '') + 'identity<=' + selectedIdentities.join('');
+    }
+    // type filter — OR logic: (t:creature OR t:instant ...)
+    if (selectedTypes.length === 1) {
+        q += (q ? ' ' : '') + 't:' + selectedTypes[0];
+    } else if (selectedTypes.length > 1) {
+        q += (q ? ' ' : '') + '(' + selectedTypes.map(t => 't:' + t).join(' OR ') + ')';
+    }
+    return q || 'name:/./';
+}
+
+// ── Toggle helpers ──
+function toggleColor(el) {
+    const c = el.dataset.color;
+    if (selectedColors.includes(c)) {
+        selectedColors = selectedColors.filter(x => x !== c);
+        el.classList.remove('active');
+    } else {
+        selectedColors.push(c);
+        el.classList.add('active');
+    }
+}
+
+function toggleIdentity(el) {
+    const c = el.dataset.identity;
+    if (selectedIdentities.includes(c)) {
+        selectedIdentities = selectedIdentities.filter(x => x !== c);
+        el.classList.remove('active');
+    } else {
+        selectedIdentities.push(c);
+        el.classList.add('active');
+    }
+}
+
+function toggleType(el) {
+    const t = el.dataset.type;
+    if (selectedTypes.includes(t)) {
+        selectedTypes = selectedTypes.filter(x => x !== t);
+        el.classList.remove('active');
+    } else {
+        selectedTypes.push(t);
+        el.classList.add('active');
+    }
+}
+
+function clearFilters() {
+    selectedColors = [];
+    selectedIdentities = [];
+    selectedTypes = [];
+    document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.identity-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+    document.getElementById('search-input').value = '';
+    document.getElementById('results-area').innerHTML = '';
+    document.getElementById('results-info').style.display = 'none';
+    document.getElementById('pagination').style.display = 'none';
+}
+
+// ── Search ──
+async function doSearch() {
+    if (isLoading) return;
+    const q = buildQuery();
+    currentQuery = q;
+    nextPageUrl = null;
+    document.getElementById('results-area').innerHTML = '<div class="loading-msg">Searching...</div>';
+    document.getElementById('pagination').style.display = 'none';
+    document.getElementById('results-info').style.display = 'none';
+    await fetchCards(`https://api.scryfall.com/cards/search?q=${encodeURIComponent(q)}&order=name`, true);
+}
+
+async function loadMore() {
+    if (!nextPageUrl || isLoading) return;
+    await fetchCards(nextPageUrl, false);
+}
+
+async function loadPopular() {
+    document.getElementById('search-input').value = '';
+    selectedColors = [];
+    selectedIdentities = [];
+    selectedTypes = [];
+    document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.identity-chip').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
+    document.getElementById('results-area').innerHTML = '<div class="loading-msg">Loading popular cards...</div>';
+    document.getElementById('pagination').style.display = 'none';
+    document.getElementById('results-info').style.display = 'none';
+    // popular = cards ordered by edhrec rank
+    await fetchCards('https://api.scryfall.com/cards/search?q=game:paper&order=edhrec&dir=asc', true);
+}
+
+async function fetchCards(url, replace) {
+    isLoading = true;
+    try {
+        const res = await fetch(url);
+        const data = await res.json();
+        if (data.object === 'error') {
+            document.getElementById('results-area').innerHTML = `<div class="error-message">${data.details || 'No cards found.'}</div>`;
+            document.getElementById('results-info').style.display = 'none';
+            return;
+        }
+        const cards = data.data || [];
+        const total = data.total_cards || cards.length;
+        document.getElementById('results-info').style.display = 'block';
+        document.getElementById('results-info').textContent =
+            `${total.toLocaleString()} card${total !== 1 ? 's' : ''} found`;
+        renderCards(cards, replace);
+        nextPageUrl = data.has_more ? data.next_page : null;
+        document.getElementById('pagination').style.display = nextPageUrl ? '' : 'none';
+    } catch(e) {
+        document.getElementById('results-area').innerHTML = '<div class="error-message">Network error. Check your connection and try again.</div>';
+    } finally {
+        isLoading = false;
+    }
+}
+
+// ── Render ──
+function renderCards(cards, replace) {
+    const area = document.getElementById('results-area');
+    let grid = replace ? null : area.querySelector('.card-grid');
+    if (!grid) {
+        if (replace) area.innerHTML = '';
+        grid = document.createElement('div');
+        grid.className = 'card-grid';
+        area.appendChild(grid);
+    }
+
+    cards.forEach(card => {
+        const thumb = document.createElement('div');
+        thumb.className = 'card-thumb';
+        thumb.onclick = () => openModal(card);
+
+        const imgUrl = card.image_uris?.large || (card.card_faces?.[0]?.image_uris?.large) || null;
+        const manaHtml = renderMana(card.mana_cost || card.card_faces?.[0]?.mana_cost || '');
+
+        thumb.innerHTML = imgUrl
+            ? `<img src="${imgUrl}" alt="${escHtml(card.name)}" loading="lazy">`
+            : `<div class="card-thumb-placeholder">${escHtml(card.name)}</div>`;
+
+        thumb.innerHTML += `
+            <div class="card-thumb-info">
+                <div class="card-thumb-name">${escHtml(card.name)}</div>
+                <div class="card-thumb-type">${manaHtml} ${escHtml(card.type_line || '')}</div>
+            </div>`;
+        grid.appendChild(thumb);
+    });
+}
+
+function renderMana(cost) {
+    if (!cost) return '';
+    return cost.replace(/\{([^}]+)\}/g, (_, sym) => {
+        const colorMap = {W:'W',U:'U',B:'B',R:'R',G:'G',C:'C'};
+        const cls = colorMap[sym] ? `mana-${sym}` : 'mana-C';
+        return `<span class="mana-symbol ${cls}">${sym}</span>`;
+    });
+}
+
+function escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Modal ──
+function openModal(card) {
+    const imgUrl = card.image_uris?.large || (card.card_faces?.[0]?.image_uris?.large) || null;
+    const oracle = card.oracle_text || card.card_faces?.map(f=>f.oracle_text).join('\n—\n') || '';
+    const manaHtml = renderMana(card.mana_cost || card.card_faces?.[0]?.mana_cost || '');
+    const power = card.power !== undefined ? `${card.power}/${card.toughness}` : (card.loyalty ? `Loyalty: ${card.loyalty}` : '');
+
+    document.getElementById('modal-content').innerHTML = `
+        <div class="modal-body">
+            <div class="modal-image">
+                ${imgUrl
+                    ? `<img src="${imgUrl}" alt="${escHtml(card.name)}">`
+                    : `<div class="modal-image-placeholder">No image available</div>`}
+            </div>
+            <div class="modal-details">
+                <div class="modal-name">${escHtml(card.name)}</div>
+                <div class="modal-type">${manaHtml} &mdash; ${escHtml(card.type_line || '')}</div>
+                <div class="modal-oracle">${escHtml(oracle).replace(/\n/g,'<br>')}</div>
+                <div class="modal-stats">
+                    ${card.set_name ? `<span><span class="label">Set:</span> ${escHtml(card.set_name)} (${escHtml((card.set||'').toUpperCase())})</span>` : ''}
+                    ${card.rarity ? `<span><span class="label">Rarity:</span> ${cap(card.rarity)}</span>` : ''}
+                    ${card.cmc !== undefined ? `<span><span class="label">CMC:</span> ${card.cmc}</span>` : ''}
+                    ${power ? `<span><span class="label">P/T:</span> ${escHtml(power)}</span>` : ''}
+                    ${card.artist ? `<span><span class="label">Artist:</span> ${escHtml(card.artist)}</span>` : ''}
+                </div>
+                <a class="modal-scryfall-link" href="${card.scryfall_uri}" target="_blank">View on Scryfall &rarr;</a>
+            </div>
+        </div>`;
+    document.getElementById('card-modal').classList.add('active');
+}
+
+function closeModal(e) {
+    if (e.target === document.getElementById('card-modal')) closeModalBtn();
+}
+function closeModalBtn() {
+    document.getElementById('card-modal').classList.remove('active');
+}
+
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : ''; }
+
+// ── Keyboard search ──
+document.getElementById('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch();
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModalBtn();
+});
+
+// ── Initial load ──
+loadPopular();
+</script>
+</body>
+</html>
+
 {{end}}

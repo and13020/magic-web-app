@@ -1,0 +1,32 @@
+{{define "content"}}
+<div class="container">
+
+  <div id="auth-form">
+    <h1>Login:</h1>
+    <div class="error-message"></div> <!-- add error field response later-->
+
+    <form action="/login" method="post" autocomplete="off">
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <div class="input-wrap">
+          <input type="email" id="email" name="email" placeholder="you@example.com" required/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrap">
+          <input type="password" id="password" name="password" placeholder="Min. 8 characters" required/>
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-primary">Login</button>
+    </form>
+
+  </div>
+</div>
+{{end}}
+
+</html>

@@ -6,17 +6,23 @@ import (
 
 func (app *application) routes() *gin.Engine {
 
-	// Set up router
+	GetAndPost := []string{"POST", "GET"}
 	r := gin.Default() // default includes logging and recovery middleware
 	// gin.SetMode(gin.ReleaseMode)
 
 	r.Static(app.publicPath, app.publicPath)
 
-	public := r.Group("/v1")
+	public := r.Group("/")
 	public.GET("/", app.home)
-	public.GET("/random", app.random)
 	public.GET("/search", app.getCards)
 	public.POST("/search", app.getCardsForm)
+	public.Match(GetAndPost, "/signup", app.Signup)
+	public.Match(GetAndPost, "/login", app.Login)
+	public.GET("/logoff", app.Logoff)
+	public.GET("/random", app.random)
+
+	// private := r.Group("/", app.sessionMiddleware())
+	// removing this group/middleware as we can just validate for auth on each render
 
 	// proper flow for JWT:
 	// 1. user creates account
@@ -26,8 +32,6 @@ func (app *application) routes() *gin.Engine {
 	// 5. server returns JWT as response
 	// 6. client returns JWT on subsequent requsts
 	// 7. server validates token by creating new signature, comparing w/ existing signature (and checking expiration too)
-	private := r.Group("/v2")
-	private.GET("/", app.home)
 
 	// Routes
 

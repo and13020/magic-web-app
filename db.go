@@ -22,7 +22,7 @@ func setupDB(dbName string) (*sql.DB, error) {
 	}
 
 	// Create tables if they don't exist
-	schemas := []string{q.TestSchema, q.UserSchema, q.CardSchema, q.ImageUrisSchema, q.LegalitiesSchema, q.PricesSchema, q.RelatedUrisSchema, q.PurchaseUrisSchema}
+	schemas := []string{q.UserSchema, q.CardSchema, q.ImageUrisSchema, q.LegalitiesSchema, q.PricesSchema, q.RelatedUrisSchema, q.PurchaseUrisSchema}
 	for _, schema := range schemas {
 		_, err := db.Exec(schema)
 		if err != nil {

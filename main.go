@@ -6,9 +6,8 @@ import (
 	r "magic/repository"
 	"net/http"
 	"os"
-	"time"
 
-	"github.com/golangcollege/sessions"
+	"github.com/gorilla/sessions"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -19,8 +18,11 @@ type application struct {
 	tmplDir    string
 	tp         *TemplateRenderer
 	publicPath string
-	session    *sessions.Session
+	store      *sessions.CookieStore
+	user       *r.UserRepository
 }
+
+var session_key = "mtg_app_session"
 
 func main() {
 	// DB WORK
@@ -70,17 +72,27 @@ func main() {
 	}
 	defer db.Close()
 
+	// TODO: add key as env var or secrets
+	store := sessions.NewCookieStore([]byte("super-secret-key"))
+	store.Options = &sessions.Options{
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/", // cookie available across domain
+		MaxAge:   86400 * 5,
+		// Secure: true, // set to TRUE if using https
+	}
+
 	app := &application{
 		errorLog:   log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.LUTC|log.Lshortfile),
 		infoLog:    log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.LUTC),
 		card:       r.NewCardRepository(db), // Initialize with any dependencies needed for the repository
 		tmplDir:    "./templates",
 		publicPath: "./public/",
-		session:    sessions.New([]byte("secret-session")),
+		store:      store,
+		user:       r.NewUserRepository(db),
 	}
 
 	app.tp = NewTemplateRenderer(app.tmplDir)
-	app.session.Lifetime = 12 * time.Hour
 
 	app.Serve()
 }
