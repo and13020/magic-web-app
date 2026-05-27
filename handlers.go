@@ -91,7 +91,7 @@ func (app *application) getCardsForm(c *gin.Context) {
 	app.render(c, "index.html", &templateData{Cards: cards})
 }
 
-func (app *application) Signup(c *gin.Context) {
+func (app *application) signup(c *gin.Context) {
 
 	if c.Request.Method == http.MethodPost {
 
@@ -144,7 +144,7 @@ func (app *application) Signup(c *gin.Context) {
 	app.render(c, "signup.html", nil)
 }
 
-func (app *application) Login(c *gin.Context) {
+func (app *application) login(c *gin.Context) {
 
 	// If session exists, redirect to home
 	if app.isAuthenticated(c.Request) {
@@ -216,7 +216,7 @@ func (app *application) Login(c *gin.Context) {
 }
 
 // Logoff deletes session and redirects to login page
-func (app *application) Logoff(c *gin.Context) {
+func (app *application) logoff(c *gin.Context) {
 	s, _ := app.store.Get(c.Request, session_key)
 	s.Options.MaxAge = -1
 

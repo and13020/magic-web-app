@@ -9,27 +9,8 @@
         <div>{{.Name}}</div>
     {{end}}
   {{else}}
-    <p>reached our else stmt... uh oh</p>
+    <p>in progress!</p>
   {{end}}
   <p></p>
 </div>
 {{end}}
-<script>
-  async function loadRandom() {
-    document.getElementById('view-search').style.display = '';
-    document.getElementById('view-about').style.display = 'none';
-    document.getElementById('results-area').innerHTML = '<div class="loading-msg">Drawing a random card...</div>';
-    document.getElementById('pagination').style.display = 'none';
-    document.getElementById('results-info').style.display = 'none';
-    try {
-        const res = await fetch('https://api.scryfall.com/cards/random');
-        const card = await res.json();
-        document.getElementById('results-info').style.display = 'block';
-        document.getElementById('results-info').textContent = 'Random card draw';
-        renderCards([card], true);
-        nextPageUrl = null;
-    } catch(e) {
-        document.getElementById('results-area').innerHTML = '<div class="error-message">Failed to fetch a random card. Please try again.</div>';
-    }
-}
-</script>

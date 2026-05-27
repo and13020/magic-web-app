@@ -16,9 +16,9 @@ func (app *application) routes() *gin.Engine {
 	public.GET("/", app.home)
 	public.GET("/search", app.getCards)
 	public.POST("/search", app.getCardsForm)
-	public.Match(GetAndPost, "/signup", app.Signup)
-	public.Match(GetAndPost, "/login", app.Login)
-	public.GET("/logoff", app.Logoff)
+	public.Match(GetAndPost, "/signup", app.signup)
+	public.Match(GetAndPost, "/login", app.login)
+	public.GET("/logoff", app.logoff)
 	public.GET("/random", app.random)
 
 	// private := r.Group("/", app.sessionMiddleware())

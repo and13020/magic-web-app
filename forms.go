@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
+	"unicode"
 )
 
 type formErrors map[string][]string
@@ -80,5 +82,27 @@ func (f *Form) MatchPass(p1, p2 string) *Form {
 		f.Errors.Add(p1, "Passwords must match\n")
 	}
 
+	return f
+}
+
+func (f *Form) ValidEmail(field string) *Form {
+	v := strings.TrimSpace(f.Get(field))
+	emailRegex := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+	if !emailRegex.MatchString(v) {
+		f.Errors.Add(field, fmt.Sprintf("Field: %v must be a valid email address\n", field))
+	}
+	return f
+}
+
+func (f *Form) PlainText(fields ...string) *Form {
+	for _, field := range fields {
+		v := f.Get(field)
+		for _, r := range v {
+			if !unicode.IsPrint(r) && !unicode.IsSpace(r) {
+				f.Errors.Add(field, fmt.Sprintf("Field: %v must contain only valid plaintext characters\n", field))
+				break
+			}
+		}
+	}
 	return f
 }
