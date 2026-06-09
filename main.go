@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/gorilla/sessions"
+	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -22,50 +23,28 @@ type application struct {
 	user       *r.UserRepository
 }
 
-var session_key = "mtg_app_session"
+var session_key, sessionSecret string
+
+func loadEnv() {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	session_key = os.Getenv("SESSION_KEY")
+	if session_key == "" {
+		log.Fatal("SESSION_KEY is required")
+	}
+	sessionSecret = os.Getenv("SECRET_KEY")
+	if sessionSecret == "" {
+		log.Fatal("SECRET_KEY is required")
+	}
+}
 
 func main() {
-	// DB WORK
-	// 1. create sqlite database
-	// 2. create table for cards
-	// 3. create function to insert card into database
-	// 4. search by any card detail (flexible query)
-	// 5. delete card
-	// 6. update card
-	// 7. data limitations (e.g. only store 1000 cards, delete oldest card when limit is reached)
 
-	// API WORK
-	// 1. Created basic request to get card
-	// 2. Create other means to search for card
-	// 3. Search multiple cards
-	// 4. Pagination
-	// 5. Cache - check DB if card exists prior to making API call (exact match only)
+	loadEnv()
 
-	// FRONT END
-	// 1. Create basic UI to display card details
-	// 2. Create search bar to search for card
-	// 3. Display multiple cards
-	// 4. Pagination
-	// 5. Add ability to save card to database (if not already saved)
-	// 6. Add ability to delete card from database
-	// 7. Save a deck of cards to database (if not already saved)
-	// 8. Add ability to delete deck from database
-	// 9. Add ability to create deck
-	// 10. Add cookies for our sessions to track user data (e.g. saved cards, saved decks, etc)
-	// 10. etc etc
-
-	// SIMPLIFY ABOVE:
-	// 1. Web server
-	// 2. Create API endpoints for above functionality
-	// 3. Create front end to call API endpoints and display data.. for now lets just spit out data
-
-	// TODO:
-	//Typical Storage Locations
-	//Project Root: For simple development, keep the .db file in the same folder as your code.
-	//User Data Directories: For production apps, use system-standard folders to ensure the database persists and has the correct permissions:
-	//Windows: %AppData%\YourAppName\
-	//Linux/macOS: ~/.config/YourAppName/ or ~/.local/share/YourAppName/
-	//Mobile Apps (Android/iOS): Stored in the app's private data folder (e.g., /data/data/<package_name>/databases/) to keep it hidden from users.
 	db, err := setupDB("mtg.db")
 	if err != nil {
 		log.Fatal(err)
@@ -73,7 +52,7 @@ func main() {
 	defer db.Close()
 
 	// TODO: add key as env var or secrets
-	store := sessions.NewCookieStore([]byte("super-secret-key"))
+	store := sessions.NewCookieStore([]byte(sessionSecret))
 	store.Options = &sessions.Options{
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
