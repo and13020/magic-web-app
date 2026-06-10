@@ -15,7 +15,7 @@ import (
 // mux.HandleFunc("/update", app.card.updateCard)
 // mux.HandleFunc("/delete", app.card.deleteCard)
 
-const loggedInUserKey = "auth"
+const loggedInUserKey = "user_id"
 
 // GIN handlers require *gin.Context, giving methods for request/response
 func (app *application) home(c *gin.Context) {
@@ -59,21 +59,22 @@ func (app *application) getCardsForm(c *gin.Context) {
 	// 	c.String(http.StatusBadRequest, "Error fetching card by name: ", name, " --- ", err)
 	// }
 
+	err := c.Request.ParseForm()
+	if err != nil {
+		fmt.Println("Could not parse form! ", err)
+		form := NewForm(c.Request.Form)
+		form.Errors.Add("generic", "could not parse form")
+
+		app.render(c, "index.html", &templateData{Form: form})
+		return
+	}
+
 	form := NewForm(c.Request.Form)
 	// validation on form fields..
 	// ie fewer than 1000 chars for search
 
 	// once validation attempted, check if any errors found
 	if !form.Valid() {
-	}
-
-	err := c.Request.ParseForm()
-	if err != nil {
-		fmt.Println("Could not parse form! ", err)
-		form.Errors.Add("generic", "could not parse form")
-
-		app.render(c, "index.html", &templateData{Form: form})
-		return
 	}
 
 	// if form is valid w/ no errors
@@ -188,15 +189,15 @@ func (app *application) login(c *gin.Context) {
 			return
 		}
 
-		// Create session
-		session, err := app.store.Get(c.Request, session_key)
+		// Create session and store user id
+		session, err := app.store.Get(c.Request, app.sessionName)
 		if err != nil {
 			fmt.Println("Failed to store.Get to create new session: ", err)
 			http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		session.Values[loggedInUserKey] = true
+		session.Values[loggedInUserKey] = user.ID
 
 		err = session.Save(c.Request, c.Writer)
 		if err != nil {
@@ -217,7 +218,7 @@ func (app *application) login(c *gin.Context) {
 
 // Logoff deletes session and redirects to login page
 func (app *application) logoff(c *gin.Context) {
-	s, _ := app.store.Get(c.Request, session_key)
+	s, _ := app.store.Get(c.Request, app.sessionName)
 	s.Options.MaxAge = -1
 
 	fmt.Println("Successfully logged off")
@@ -225,4 +226,9 @@ func (app *application) logoff(c *gin.Context) {
 
 	http.Redirect(c.Writer, c.Request, "/", http.StatusSeeOther)
 	// app.render("put in data for flash in template")
+}
+
+// TODO: Add functionality
+func (app *application) myDecks(c *gin.Context) {
+	app.render(c, "index.html", nil)
 }

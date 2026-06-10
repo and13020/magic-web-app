@@ -42,17 +42,22 @@ func (app *application) defaultTemplateData(c *gin.Context, data *templateData) 
 // isAuthenticated accepts a *http.Request.
 // It checks store for existing session. Returns if authenticated
 func (app *application) isAuthenticated(r *http.Request) bool {
-
-	s, err := app.store.Get(r, session_key)
+	s, err := app.store.Get(r, app.sessionName)
 	if err != nil {
 		fmt.Println("Could not access store: ", err)
 		return false
 	}
-	auth, ok := s.Values[loggedInUserKey].(bool)
-	if !ok || !auth {
-		fmt.Printf("Could not verify auth: %t", auth)
+
+	userID, ok := s.Values[loggedInUserKey].(string)
+	if !ok || userID == "" {
 		return false
 	}
 
-	return auth
+	_, err = app.user.GetUserByField("id", userID)
+	if err != nil {
+		fmt.Printf("Could not verify user id from session: %v\n", err)
+		return false
+	}
+
+	return true
 }

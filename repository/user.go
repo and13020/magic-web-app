@@ -39,7 +39,7 @@ func (u UserRepository) Validate(email, username string) error {
 
 	// Email validation
 	_, err := u.GetUserByField("email", email)
-	if err != nil && err.Error() != sql.ErrNoRows.Error() {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 	if err == nil {
@@ -49,7 +49,7 @@ func (u UserRepository) Validate(email, username string) error {
 	// if user isn't returned, cant compare values
 
 	_, err = u.GetUserByField("username", username)
-	if err != nil && err.Error() != sql.ErrNoRows.Error() {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
 	if err == nil {
@@ -105,6 +105,10 @@ func (u UserRepository) GetUserByField(field, input string) (*User, error) {
 		prep = `SELECT * FROM users WHERE username = ?`
 	case "email":
 		prep = `SELECT * FROM users WHERE email = ?`
+	case "id":
+		prep = `SELECT * FROM users WHERE id = ?`
+	default:
+		prep = ""
 	}
 
 	stmt, err := u.db.PrepareContext(c, prep)

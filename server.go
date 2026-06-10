@@ -8,9 +8,9 @@ import (
 
 func (app *application) Serve() {
 	s := http.Server{
-		Addr:         ":8080",
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		Addr:         ":8080",          // config
+		ReadTimeout:  5 * time.Second,  // config
+		WriteTimeout: 10 * time.Second, // config
 		Handler:      app.routes(),
 	}
 

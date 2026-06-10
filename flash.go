@@ -9,7 +9,7 @@ import (
 
 // SetFlash(c, n, v) gets session from store, then saves the session: session[n] = v
 func (app *application) SetFlash(c *gin.Context, value string) {
-	s, err := app.store.Get(c.Request, session_key)
+	s, err := app.store.Get(c.Request, app.sessionName) // session key
 	if err != nil {
 		fmt.Println("Could not set flash due to: ", err)
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
@@ -21,7 +21,7 @@ func (app *application) SetFlash(c *gin.Context, value string) {
 
 func (app *application) GetFlash(c *gin.Context) string {
 	fmt.Println("inside get flash")
-	s, err := app.store.Get(c.Request, session_key)
+	s, err := app.store.Get(c.Request, app.sessionName)
 	if err != nil {
 		fmt.Println("Could not get flash due to: ", err)
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
