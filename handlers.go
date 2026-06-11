@@ -9,13 +9,13 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// mux.HandleFunc("/", app.home)
-// mux.HandleFunc("/search/{name}", app.card.search) // {name} is a path variable that can be accessed in the handler function
-// mux.HandleFunc("/random", app.card.random)
-// mux.HandleFunc("/update", app.card.updateCard)
-// mux.HandleFunc("/delete", app.card.deleteCard)
-
-const loggedInUserKey = "user_id"
+const (
+	loggedInUserKey    = "user_id"
+	formFieldEmail     = "email"
+	formFieldPassword  = "password"
+	formFieldUsername  = "username"
+	formFieldPassword2 = "password2"
+)
 
 // GIN handlers require *gin.Context, giving methods for request/response
 func (app *application) home(c *gin.Context) {
@@ -105,22 +105,22 @@ func (app *application) signup(c *gin.Context) {
 		form := NewForm(c.Request.Form)
 
 		// validations
-		form.Required("email", "password", "password2", "username").
-			MinLength("password", 8).
-			MaxLength("password", 255).
-			MinLength("password2", 8).
-			MaxLength("password2", 255).
-			MatchPass("password", "password2").
-			MinLength("username", 3)
+		form.Required(formFieldEmail, formFieldPassword, formFieldPassword2, formFieldUsername).
+			MinLength(formFieldPassword, 8).
+			MaxLength(formFieldPassword, 255).
+			MinLength(formFieldPassword2, 8).
+			MaxLength(formFieldPassword2, 255).
+			MatchPass(formFieldPassword, formFieldPassword2).
+			MinLength(formFieldUsername, 3)
 
 		if !form.Valid() {
 			app.render(c, "signup.html", &templateData{Form: form}) // return form w/ error/s
 			return
 		}
 
-		email := c.Request.FormValue("email")
-		username := c.Request.FormValue("username")
-		password := c.Request.FormValue("password")
+		email := c.Request.FormValue(formFieldEmail)
+		username := c.Request.FormValue(formFieldUsername)
+		password := c.Request.FormValue(formFieldPassword)
 
 		// Check if email or username already used
 		err = app.user.Validate(email, username)
@@ -163,7 +163,7 @@ func (app *application) login(c *gin.Context) {
 		}
 
 		form := NewForm(c.Request.Form)
-		form.Required("email", "password")
+		form.Required(formFieldEmail, formFieldPassword)
 
 		if !form.Valid() {
 			app.errorLog.Printf("Validation failed: %v", form.Errors)
@@ -171,11 +171,8 @@ func (app *application) login(c *gin.Context) {
 			return
 		}
 
-		email := c.Request.FormValue("email")
-		password := c.Request.FormValue("password")
-
 		// check if user exists in DB
-		user, err := app.user.GetUserByField("email", email)
+		user, err := app.user.GetUserByField(formFieldEmail, c.Request.FormValue(formFieldEmail))
 		if err != nil {
 			app.errorLog.Printf("Login failed: %v", err)
 			app.render(c, "login.html", &templateData{Form: form}) // return form w/ error/s
@@ -183,30 +180,13 @@ func (app *application) login(c *gin.Context) {
 		}
 
 		// check if pass from DB/input match
-		if !utils.CheckPassword(user.Password, password) {
+		if !utils.CheckPassword(user.Password, c.Request.FormValue(formFieldPassword)) {
 			app.errorLog.Printf("Login failed due to incorrect password")
 			app.render(c, "login.html", &templateData{Form: form}) // return form w/ error/s
 			return
 		}
 
-		// Create session and store user id
-		session, err := app.store.Get(c.Request, app.sessionName)
-		if err != nil {
-			fmt.Println("Failed to store.Get to create new session: ", err)
-			http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		session.Values[loggedInUserKey] = user.ID
-
-		err = session.Save(c.Request, c.Writer)
-		if err != nil {
-			fmt.Println("session failed to save: ", err)
-			http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		fmt.Println("Session created: ", session)
-		app.SetFlash(c, "Successfully logged in")
+		app.generateSession(c, user.ID)
 
 		http.Redirect(c.Writer, c.Request, "/", http.StatusSeeOther)
 		return
