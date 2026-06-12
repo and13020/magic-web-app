@@ -5,9 +5,16 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"magic/utils"
 	"strconv"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	userColumnEmail    = "email"
+	userColumnPassword = "password"
+	userColumnUsername = "username"
 )
 
 type User struct {
@@ -38,7 +45,7 @@ func NewUserRepository(db *sql.DB) *UserRepository {
 func (u UserRepository) Validate(email, username string) error {
 
 	// Email validation
-	_, err := u.GetUserByField("email", email)
+	_, err := u.GetUserByField(userColumnEmail, email)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
@@ -48,7 +55,7 @@ func (u UserRepository) Validate(email, username string) error {
 
 	// if user isn't returned, cant compare values
 
-	_, err = u.GetUserByField("username", username)
+	_, err = u.GetUserByField(userColumnUsername, username)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return err
 	}
@@ -59,12 +66,15 @@ func (u UserRepository) Validate(email, username string) error {
 	return nil
 }
 
-// TODO: add to DB
 func (u UserRepository) Add(email, password, username string) error {
 	c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	stmt, err := u.db.PrepareContext(c, "INSERT INTO users (email, password, username) VALUES (?, ?, ?)")
+	queryStr := fmt.Sprintf("INSERT INTO users (%s, %s, %s) VALUES (?, ?, ?)",
+		userColumnEmail,
+		userColumnPassword,
+		userColumnUsername)
+	stmt, err := u.db.PrepareContext(c, queryStr)
 	if err != nil {
 		fmt.Println("Could not prepare context: ", err)
 		return err
@@ -72,9 +82,9 @@ func (u UserRepository) Add(email, password, username string) error {
 	defer stmt.Close()
 
 	// bcrypt password
-	hashedPassword, err := utils.HashPassword(password)
+	hashedPassword, err := hashPassword(password)
 	if err != nil {
-		fmt.Println("Failed to encrypt password: ", err)
+		return err
 	}
 
 	result, err := stmt.Exec(email, hashedPassword, username)
@@ -93,7 +103,20 @@ func (u UserRepository) Add(email, password, username string) error {
 	return nil
 }
 
-// GetUserByField(f, i) queries users for given f WHERE f = i and returns a user if present
+// HashPassword accepts a string, returns its hash and an error
+// TODO: bcrypt accepts max 72 bytes, should implement in frontend
+func hashPassword(password string) (string, error) {
+	h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+	return string(h), nil
+}
+
+// GetUserByField(f, i) queries users WHERE field = input
+// and returns a user if present for matching input
+// field can be "username", "email", or "id"
+// otherwise no query will execute
 func (u UserRepository) GetUserByField(field, input string) (*User, error) {
 	c, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()

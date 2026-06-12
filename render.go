@@ -30,7 +30,6 @@ func (app *application) defaultTemplateData(c *gin.Context, data *templateData) 
 	if data == nil {
 		data = &templateData{}
 	}
-	// data.Flash = "flash was here"                 // flash works
 	if f := app.GetFlash(c); f != "" {
 		data.Flash = f
 	}

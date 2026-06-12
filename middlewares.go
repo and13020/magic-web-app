@@ -21,10 +21,16 @@ func (app *application) sessionMiddleware() gin.HandlerFunc {
 			fmt.Println("Could not decode session: ", err)
 			return
 		}
+
+		// TODO: if we update keys or smth we should remove invalid cookies
+		// when users access any private routes requiring this sessionMiddle()
+		// which then reroutes to login anew
+
+		// problem is the MaxAge field doesn't cause client to remove the cookie or do anything..
+		// so we'd have to read the time and compare to present time or smth?
+
 		userID, ok := s.Values[loggedInUserKey].(string)
 		if !ok || userID == "" {
-			fmt.Println("session value USERID not found or invalid")
-			fmt.Println("session contents: ", s)
 			http.Redirect(c.Writer, c.Request, "/login", http.StatusFound)
 			return
 		}

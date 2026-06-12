@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 	"log"
-	q "magic/db_ops"
+	q "magic/db"
 	"net/http"
 	"net/url"
 	"strconv"

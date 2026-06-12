@@ -1,23 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Magic Site</title>
-  <link rel="stylesheet" href="/public/css/style.css">
-  <link rel="stylesheet" href="/public/css/search.css">
-</head>
-<body>
-{{template "header.html" .}}
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Site</title>
+    <link rel="stylesheet" href="/public/css/style.css">
+    <link rel="stylesheet" href="/public/css/search.css">
+  </head>
+  <body>
+    {{template "header.html" .}}
 
-<main class="main-content">
-  {{with .Flash}}
-    <div class="flash">{{.}}</div>
-  {{end}}
+    <main class="main-content">
+      {{with .Flash}}
+        <div id="flash-message" class="flash">
+          <span class="flash-text">{{.}}</span>
+          <button type="button" class="flash-close" aria-label="Dismiss notification">×</button>
+        </div>
+      {{end}}
 
-  {{template "content" .}}<br>
-</main>
+      {{template "content" .}}<br>
+    </main>
 
-{{template "footer.html" .}}
-</body>
+    {{template "footer.html" .}}
+
+    <!-- TODO: Fade not working properly -->
+    <script>
+      const flashEl = document.getElementById('flash-message');
+      if (flashEl && flashEl.textContent.trim()) {
+        setTimeout(() => {
+          flashEl.classList.add('fade-out');
+
+          setTimeout(() => flashEl.remove(), 500);
+        }, 3000);
+      }
+    </script>
+  </body>
 </html>

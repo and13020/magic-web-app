@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // isAuthenticated accepts a *http.Request.
@@ -34,7 +35,6 @@ func (app *application) generateSession(c *gin.Context, uID string) {
 	// Create session and store user id
 	session, err := app.store.Get(c.Request, app.sessionName)
 	if err != nil {
-		fmt.Println("Failed to store.Get to create new session: ", err)
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -43,10 +43,18 @@ func (app *application) generateSession(c *gin.Context, uID string) {
 
 	err = session.Save(c.Request, c.Writer)
 	if err != nil {
-		fmt.Println("session failed to save: ", err)
 		http.Error(c.Writer, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println("Session created: ", session)
 	app.SetFlash(c, "Successfully logged in")
+}
+
+// checkPassword accepts a hashed password and plaintext password, compares if they match.
+// Returns true on a match.
+func checkPassword(hash, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	if err == nil {
+		return true
+	}
+	return false
 }

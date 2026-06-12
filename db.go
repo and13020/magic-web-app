@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	q "magic/db_ops"
+	q "magic/db"
 )
 
 func connectDB(dbName string) (*sql.DB, error) {
