@@ -33,7 +33,7 @@ func (app *application) defaultTemplateData(c *gin.Context, data *templateData) 
 	if f := app.GetFlash(c); f != "" {
 		data.Flash = f
 	}
-	data.IsAuthenticated = app.isAuthenticated(c.Request) // add auth later
+	data.IsAuthenticated = app.isAuthenticated(c.Request)
 
 	return data
 }

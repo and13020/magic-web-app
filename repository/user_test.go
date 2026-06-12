@@ -291,7 +291,7 @@ func TestGetUserByField_ByUsername_Success(t *testing.T) {
 	repo := NewUserRepository(db)
 
 	expectedUser := &User{
-		ID:       "1",
+		ID:       1,
 		Email:    "test@example.com",
 		Username: "testuser",
 		Password: "hashedpass",
@@ -308,7 +308,7 @@ func TestGetUserByField_ByUsername_Success(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if user.ID != expectedUser.ID {
-		t.Fatalf("expected ID %s, got %s", expectedUser.ID, user.ID)
+		t.Fatalf("expected ID %d, got %d", expectedUser.ID, user.ID)
 	}
 	if user.Email != expectedUser.Email {
 		t.Fatalf("expected email %s, got %s", expectedUser.Email, user.Email)
@@ -335,7 +335,7 @@ func TestGetUserByField_ByEmail_Success(t *testing.T) {
 	repo := NewUserRepository(db)
 
 	expectedUser := &User{
-		ID:       "2",
+		ID:       2,
 		Email:    "test2@example.com",
 		Username: "testuser2",
 		Password: "hashedpass2",
@@ -352,7 +352,7 @@ func TestGetUserByField_ByEmail_Success(t *testing.T) {
 		t.Fatalf("expected no error, got %v", err)
 	}
 	if user.ID != expectedUser.ID {
-		t.Fatalf("expected ID %s, got %s", expectedUser.ID, user.ID)
+		t.Fatalf("expected ID %d, got %d", expectedUser.ID, user.ID)
 	}
 	if user.Email != expectedUser.Email {
 		t.Fatalf("expected email %s, got %s", expectedUser.Email, user.Email)
@@ -487,14 +487,9 @@ func TestAdd_HashPasswordError(t *testing.T) {
 
 	longPassword := string(make([]byte, 73))
 
-	mock.ExpectPrepare("INSERT INTO users").
-		ExpectExec().
-		WithArgs("test@example.com", sqlmock.AnyArg(), "testuser").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
 	err = repo.Add("test@example.com", longPassword, "testuser")
-	if err != nil {
-		t.Fatalf("expected no error even with hash error, got %v", err)
+	if err == nil {
+		t.Fatal("expected error from bcrypt due to long password")
 	}
 
 	if err := mock.ExpectationsWereMet(); err != nil {

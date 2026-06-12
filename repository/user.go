@@ -18,7 +18,7 @@ const (
 )
 
 type User struct {
-	ID        string    `json:"id" sql:"id"`
+	ID        int       `json:"id" sql:"id"`
 	Email     string    `json:"email" validate:"required" sql:"email"`
 	Password  string    `json:"password" validate:"required" sql:"password"`
 	Username  string    `json:"username" sql:"username"`
@@ -104,7 +104,6 @@ func (u UserRepository) Add(email, password, username string) error {
 }
 
 // HashPassword accepts a string, returns its hash and an error
-// TODO: bcrypt accepts max 72 bytes, should implement in frontend
 func hashPassword(password string) (string, error) {
 	h, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

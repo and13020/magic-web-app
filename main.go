@@ -28,27 +28,26 @@ func main() {
 
 	c := config.LoadEnv()
 
-	// TODO: access control for DB? for sqlite3 does it matter?
 	db, err := setupDB(c.DbConfig.DbPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	// TODO: add key as env var or secrets
-	store := sessions.NewCookieStore([]byte(c.SessionKey))
+	// Note: to store custom types in our cookie, we would register it prior to creating session (in main or init)
+	store := sessions.NewCookieStore([]byte(c.SessionAuthKey), []byte(c.SessionEncrKey))
 	store.Options = &sessions.Options{
-		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Path:     "/", // cookie available across domain
-		MaxAge:   86400 * 5,
-		// Secure: true, // set to TRUE if using https
+		Path:     "/",      // cookie available across domain
+		MaxAge:   3600 * 8, // 8 hrs
+		Secure:   true,     // set to TRUE if using https
+		HttpOnly: true,
 	}
 
 	app := &application{
 		errorLog:    log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.LUTC|log.Lshortfile),
 		infoLog:     log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime|log.LUTC),
-		card:        r.NewCardRepository(db), // Initialize with any dependencies needed for the repository
+		card:        r.NewCardRepository(db),
 		tmplDir:     "./templates",
 		publicPath:  "./public/",
 		store:       store,

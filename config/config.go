@@ -8,20 +8,14 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// TODO:	below require sessionKey - figure out how to properly pass
-// flash.go
-// render.go
-// middlewares.go
-// handlers.go
-
 const badConfig string = "Failed to read configs:\nEnv var: %v\nExists: %v\n"
 
 type Config struct {
-	DbConfig     DbConfig
-	ServerConfig ServerConfig
-	SecretKey    string
-	SessionKey   string
-	SessionName  string
+	DbConfig       DbConfig
+	ServerConfig   ServerConfig
+	SessionAuthKey string
+	SessionEncrKey string
+	SessionName    string
 }
 
 // DbConfig carries db related config details
@@ -90,25 +84,27 @@ func LoadEnv() *Config {
 		log.Fatal("Error loading .env file")
 	}
 
-	sessionKey := os.Getenv("SESSION_KEY")
-	if sessionKey == "" {
-		log.Fatal("SESSION_KEY is required")
+	sAuthKey := os.Getenv("SESSION_AUTH_KEY")
+	if sAuthKey == "" {
+		log.Fatal("SESSION_AUTH_KEY is required")
 	}
-	secretKey := os.Getenv("SECRET_KEY")
-	if secretKey == "" {
-		log.Fatal("SECRET_KEY is required")
+
+	sEncrKey := os.Getenv("SESSION_ENCRYPTION_KEY")
+	if sEncrKey == "" {
+		log.Fatal("SESSION_ENCRYPTION_KEY is required")
 	}
+
 	sessionName := os.Getenv("SESSION_NAME")
 	if sessionName == "" {
 		sessionName = "mtg_app_session"
 	}
 
 	config := Config{
-		ServerConfig: *getServerConfig(),
-		DbConfig:     *getDBConfig(),
-		SecretKey:    secretKey,
-		SessionKey:   sessionKey,
-		SessionName:  sessionName,
+		ServerConfig:   *getServerConfig(),
+		DbConfig:       *getDBConfig(),
+		SessionAuthKey: sAuthKey,
+		SessionEncrKey: sEncrKey,
+		SessionName:    sessionName,
 	}
 
 	return &config

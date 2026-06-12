@@ -20,7 +20,7 @@ func (app *application) routes() *gin.Engine {
 	public.GET("/logoff", app.logoff)
 	public.GET("/random", app.random)
 
-	private := r.Group("/", app.sessionMiddleware())
+	private := r.Group("/", app.authMiddleware())
 	private.GET("/mydecks", app.myDecks)
 
 	return r

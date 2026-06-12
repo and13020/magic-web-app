@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	loggedInUserKey    = "user_id"
+	UserIdKey          = "id"
 	formFieldEmail     = "email"
 	formFieldPassword  = "password"
 	formFieldUsername  = "username"

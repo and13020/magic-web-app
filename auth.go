@@ -17,7 +17,7 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 		return false
 	}
 
-	userID, ok := s.Values[loggedInUserKey].(string)
+	userID, ok := s.Values[UserIdKey].(string)
 	if !ok || userID == "" {
 		return false
 	}
@@ -31,7 +31,8 @@ func (app *application) isAuthenticated(r *http.Request) bool {
 	return true
 }
 
-func (app *application) generateSession(c *gin.Context, uID string) {
+// generateSession inserts the given uID into the session and saves it
+func (app *application) generateSession(c *gin.Context, uID int) {
 	// Create session and store user id
 	session, err := app.store.Get(c.Request, app.sessionName)
 	if err != nil {
@@ -39,7 +40,7 @@ func (app *application) generateSession(c *gin.Context, uID string) {
 		return
 	}
 
-	session.Values[loggedInUserKey] = uID
+	session.Values[UserIdKey] = uID
 
 	err = session.Save(c.Request, c.Writer)
 	if err != nil {
